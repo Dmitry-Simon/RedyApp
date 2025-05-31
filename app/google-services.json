@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "28434957029",
+    "project_id": "redyapp-proj",
+    "storage_bucket": "redyapp-proj.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:28434957029:android:9afeb6e039f18aba6c0a0c",
+        "android_client_info": {
+          "package_name": "com.example.redyapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCW6cbSPJ3LTb72iWxPrJSpqtheMX2MJSk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
