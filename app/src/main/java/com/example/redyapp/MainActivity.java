@@ -1,8 +1,6 @@
 package com.example.redyapp;
 
 import android.Manifest;
-import android.content.DialogInterface;
-import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.media.MediaRecorder;
 import android.net.Uri;
@@ -12,7 +10,6 @@ import android.provider.OpenableColumns;
 import android.util.Log;
 import android.view.View;
 import android.widget.Toast;
-import androidx.activity.result.ActivityResultCallback;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
@@ -25,9 +22,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.Locale; // For String.format
-
-// Import for Retrofit (should already be there from previous steps)
+import java.util.Locale;
 import okhttp3.MediaType;
 import okhttp3.MultipartBody;
 import okhttp3.RequestBody;
@@ -35,6 +30,16 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
+/**
+ * MainActivity is the entry point of the Redy App.
+ * It handles audio recording, file uploads, and displays results of watermelon sweetness predictions.
+ * This activity uses MediaRecorder for audio recording and Retrofit for network requests.
+ * It also manages UI states for recording, processing, and displaying results.
+ * The activity includes:
+ * - Recording audio with a MediaRecorder
+ * - Uploading audio files to a server for prediction
+ * - Displaying prediction results
+ */
 public class MainActivity extends AppCompatActivity {
 
     private ActivityMainBinding binding;
@@ -46,6 +51,7 @@ public class MainActivity extends AppCompatActivity {
     private CountDownTimer countDownTimer;
     private static final String TAG = "MainActivity";
 
+    // Request permission launcher for recording audio
     private final ActivityResultLauncher<String> requestRecordAudioPermissionLauncher =
             registerForActivityResult(new ActivityResultContracts.RequestPermission(), isGranted -> {
                 if (isGranted) {
@@ -55,6 +61,7 @@ public class MainActivity extends AppCompatActivity {
                 }
             });
 
+    // Activity result launcher for picking audio files
     private final ActivityResultLauncher<String> pickAudioFileLauncher =
             registerForActivityResult(new ActivityResultContracts.GetContent(),
                     uri -> {
@@ -72,14 +79,23 @@ public class MainActivity extends AppCompatActivity {
                         }
                     });
 
+    /**
+     * Called when the activity is starting. This is where most initialization
+     * @param savedInstanceState If the activity is being re-initialized after
+     *     previously being shut down then this Bundle contains the data it most
+     *     recently supplied in {@link #onSaveInstanceState}.  <b><i>Note: Otherwise it is null.</i></b>
+     *
+     */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        // Inflate the layout using View Binding and set the content view
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
         setInitialUIState(); // Set initial UI
 
+        // Set up click listeners for the watermelon mic button
         binding.watermelonMic.setOnClickListener(view -> {
             if (isDisplayingResult) {
                 setInitialUIState(); // Reset UI if results were shown
@@ -88,6 +104,7 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        // Set up long click listener for the watermelon mic button to upload files
         binding.watermelonMic.setOnLongClickListener(view -> {
             if (isRecording) {
                 Toast.makeText(MainActivity.this, "Cannot upload while recording.", Toast.LENGTH_SHORT).show();
@@ -100,16 +117,23 @@ public class MainActivity extends AppCompatActivity {
             return true;
         });
 
+        // Set up click listeners for settings and info buttons
         binding.settings.setOnClickListener(view -> {
             Toast.makeText(MainActivity.this, "Settings clicked (Implement SettingsActivity)", Toast.LENGTH_SHORT).show();
         });
 
+        // Placeholder for info button click, you can implement an AboutActivity later
         binding.info.setOnClickListener(view -> {
             Toast.makeText(MainActivity.this, "Info clicked (Implement AboutActivity)", Toast.LENGTH_SHORT).show();
         });
     }
 
+    /**
+     * Called when the activity is about to be destroyed.
+     * This is where you should clean up resources like MediaRecorder.
+     */
     private void setInitialUIState() {
+        // Reset UI elements to initial state
         binding.textView3.setText("Tap to Record, Long Press to Upload");
         binding.textView.setText("Settings");
         binding.textView2.setText("About");
@@ -118,12 +142,17 @@ public class MainActivity extends AppCompatActivity {
         if (binding.textViewResultMessage != null) binding.textViewResultMessage.setVisibility(View.GONE);
         // Show initial elements like tip and menu rectangle if they were hidden
         if (binding.imageView4 != null) binding.imageView4.setVisibility(View.VISIBLE);
-        // (Manage visibility of your "Tip" view similarly)
 
+        // Enable watermelon mic button
         binding.watermelonMic.setEnabled(true);
+        // Reset flag
         isDisplayingResult = false;
     }
 
+    /**
+     * Sets the UI state to indicate that recording is in progress.
+     * This method updates the text and hides unnecessary elements.
+     */
     private void setRecordingUIState() {
         binding.textView3.setText("Recording...");
         // Hide other elements if needed
@@ -134,6 +163,11 @@ public class MainActivity extends AppCompatActivity {
         isDisplayingResult = false;
     }
 
+    /**
+     * Sets the UI state to indicate that processing is happening (e.g., uploading or predicting).
+     * This method updates the text and hides unnecessary elements.
+     * @param message The message to display while processing.
+     */
     private void setProcessingUIState(String message) {
         binding.textView3.setText(message);
         if (binding.imageView4 != null) binding.imageView4.setVisibility(View.GONE);
@@ -144,6 +178,12 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
+    /**
+     * Displays the results on the main activity after prediction.
+     * This method updates the text views and hides unnecessary elements.
+     * @param label The predicted label for the watermelon sweetness.
+     * @param confidence The confidence level of the prediction.
+     */
     private void displayResultsOnMainActivity(String label, Double confidence) {
         String displayLabel = "N/A";
         if (label != null && !"Error".equals(label) && !label.isEmpty()) {
@@ -173,6 +213,10 @@ public class MainActivity extends AppCompatActivity {
         isDisplayingResult = true; // Set flag
     }
 
+    /**
+     * Shows a dialog to choose between uploading an existing WAV file or recording a new one.
+     * This method is called when the user long-presses the watermelon mic button.
+     */
     private void showUploadFileDialog() { /* ... same as before ... */
         new AlertDialog.Builder(this)
                 .setTitle("Upload Audio")
@@ -183,6 +227,10 @@ public class MainActivity extends AppCompatActivity {
                 .show();
     }
 
+    /**
+     * Checks for audio recording permission and starts the recording flow if granted.
+     * If permission is not granted, it requests the user for permission.
+     */
     private void checkPermissionAndStartRecording() { /* ... same as before ... */
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
             startRecordingFlow();
@@ -194,6 +242,10 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Starts the recording flow, initializes MediaRecorder, and handles the recording process.
+     * This method sets the UI state to indicate that recording is in progress.
+     */
     private void startRecordingFlow() { /* ... same as before, but call setRecordingUIState ... */
         if (isRecording) return;
         setRecordingUIState(); // Update UI for recording state
@@ -237,6 +289,10 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Stops the recording process, releases the MediaRecorder, and uploads the recorded audio file.
+     * This method sets the UI state to indicate that processing is happening.
+     */
     private void stopRecording() { /* ... same as before, but pass false for isUploadedFile ... */
         if (!isRecording && mediaRecorder == null) return;
         if (countDownTimer != null) countDownTimer.cancel();
@@ -255,6 +311,10 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Resets the recording state, releases the MediaRecorder, and sets the UI to initial state.
+     * This method is called when the activity is destroyed or when an error occurs.
+     */
     private void resetRecordingState() { /* ... same as before, calls setInitialUIState ... */
         if (mediaRecorder != null) {
             try { mediaRecorder.release(); } catch (Exception e) { Log.e(TAG, "Error releasing media recorder: " + e.getMessage());}
@@ -265,17 +325,32 @@ public class MainActivity extends AppCompatActivity {
         if (countDownTimer != null) countDownTimer.cancel();
     }
 
+    /**
+     * Resets the UI to the initial state after an error occurs.
+     * This method is called when an error happens during recording or uploading.
+     */
     private void resetToInitialStateAfterError() {
         setInitialUIState();
         binding.watermelonMic.setEnabled(true);
     }
 
+    /**
+     * Called when the activity is about to be destroyed.
+     * This method resets the recording state and releases resources.
+     */
     @Override
     protected void onDestroy() { /* ... same as before ... */
         super.onDestroy();
         resetRecordingState();
     }
 
+    /**
+     * Gets the file name from the URI, ensuring it ends with ".wav".
+     * If the URI is a content URI, it queries the content resolver for the display name.
+     * If not, it extracts the file name from the path.
+     * @param uri The URI of the audio file.
+     * @return The file name, or a default name if not found.
+     */
     private String getFileName(Uri uri) { /* ... same as before ... */
         String result = null;
         if (uri.getScheme() != null && uri.getScheme().equals("content")) {
@@ -296,6 +371,12 @@ public class MainActivity extends AppCompatActivity {
         return (result != null && result.toLowerCase().endsWith(".wav")) ? result : "uploaded_audio.wav";
     }
 
+    /**
+     * Converts a URI to a File object by copying the content to a temporary file.
+     * This method handles both content URIs and file URIs.
+     * @param uri The URI of the audio file.
+     * @return A File object pointing to the copied audio file, or null if an error occurs.
+     */
     private File getFileFromUri(Uri uri) { /* ... same as before ... */
         File tempFile = null;
         String fileName = getFileName(uri);
@@ -319,7 +400,12 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    // Modified to accept a boolean for cleanup logic
+    /**
+     * Uploads the audio file to the server for prediction.
+     * This method creates a multipart request and handles the response.
+     * @param file The audio file to upload.
+     * @param isUploadedFile Indicates if this is an uploaded file (for cleanup).
+     */
     private void uploadAudioFile(File file, boolean isUploadedFile) {
         if (file == null || !file.exists() || file.length() == 0L) {
             Toast.makeText(this, "File to upload is invalid.", Toast.LENGTH_SHORT).show();
@@ -335,7 +421,8 @@ public class MainActivity extends AppCompatActivity {
         ApiService apiService = RetrofitClient.getInstance();
         Call<PredictionResponse> call = apiService.predictWatermelonSweetness(body);
 
-        call.enqueue(new Callback<PredictionResponse>() {
+        call.enqueue(new Callback<>() {
+            // Callback for handling the response from the server
             @Override
             public void onResponse(@NonNull Call<PredictionResponse> call, @NonNull Response<PredictionResponse> response) {
                 if (isUploadedFile && file.getParentFile().equals(getCacheDir())) { // Clean up temp file
@@ -351,6 +438,7 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
 
+            // Callback for handling network failures
             @Override
             public void onFailure(@NonNull Call<PredictionResponse> call, @NonNull Throwable t) {
                 if (isUploadedFile && file.getParentFile().equals(getCacheDir())) { // Clean up temp file
