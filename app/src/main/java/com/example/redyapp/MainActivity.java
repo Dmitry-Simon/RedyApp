@@ -223,7 +223,6 @@ public class MainActivity extends AppCompatActivity {
                 .setMessage("Do you want to upload an existing WAV file?")
                 .setPositiveButton("Yes, Upload", (dialog, which) -> pickAudioFileLauncher.launch("audio/wav"))
                 .setNegativeButton("No, Record", (dialog, which) -> dialog.dismiss())
-                .setNeutralButton("Cancel", (dialog, which) -> dialog.dismiss())
                 .show();
     }
 
@@ -246,10 +245,10 @@ public class MainActivity extends AppCompatActivity {
      * Starts the recording flow, initializes MediaRecorder, and handles the recording process.
      * This method sets the UI state to indicate that recording is in progress.
      */
-    private void startRecordingFlow() { /* ... same as before, but call setRecordingUIState ... */
+    private void startRecordingFlow() {
         if (isRecording) return;
         setRecordingUIState(); // Update UI for recording state
-        // ... rest of the startRecordingFlow logic ...
+        // Initialize MediaRecorder
         File outputDir = getExternalCacheDir();
         if (outputDir == null) outputDir = getCacheDir();
         if (outputDir == null) {
@@ -293,7 +292,7 @@ public class MainActivity extends AppCompatActivity {
      * Stops the recording process, releases the MediaRecorder, and uploads the recorded audio file.
      * This method sets the UI state to indicate that processing is happening.
      */
-    private void stopRecording() { /* ... same as before, but pass false for isUploadedFile ... */
+    private void stopRecording() {
         if (!isRecording && mediaRecorder == null) return;
         if (countDownTimer != null) countDownTimer.cancel();
         try {
@@ -315,7 +314,7 @@ public class MainActivity extends AppCompatActivity {
      * Resets the recording state, releases the MediaRecorder, and sets the UI to initial state.
      * This method is called when the activity is destroyed or when an error occurs.
      */
-    private void resetRecordingState() { /* ... same as before, calls setInitialUIState ... */
+    private void resetRecordingState() {
         if (mediaRecorder != null) {
             try { mediaRecorder.release(); } catch (Exception e) { Log.e(TAG, "Error releasing media recorder: " + e.getMessage());}
             mediaRecorder = null;
@@ -351,7 +350,7 @@ public class MainActivity extends AppCompatActivity {
      * @param uri The URI of the audio file.
      * @return The file name, or a default name if not found.
      */
-    private String getFileName(Uri uri) { /* ... same as before ... */
+    private String getFileName(Uri uri) {
         String result = null;
         if (uri.getScheme() != null && uri.getScheme().equals("content")) {
             try (android.database.Cursor cursor = getContentResolver().query(uri, null, null, null, null)) {
@@ -377,7 +376,7 @@ public class MainActivity extends AppCompatActivity {
      * @param uri The URI of the audio file.
      * @return A File object pointing to the copied audio file, or null if an error occurs.
      */
-    private File getFileFromUri(Uri uri) { /* ... same as before ... */
+    private File getFileFromUri(Uri uri) {
         File tempFile = null;
         String fileName = getFileName(uri);
         try {
