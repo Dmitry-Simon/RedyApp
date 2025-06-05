@@ -17,8 +17,8 @@ import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.app.AppCompatDelegate;
 
-import com.creativesphere.sababa.MainActivity;
-import com.creativesphere.sababa.R;
+import com.example.redyapp.MainActivity;
+import com.example.redyapp.R;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
 import com.google.android.gms.auth.api.signin.GoogleSignInClient;
@@ -44,16 +44,7 @@ public class MainLogRegActivity extends AppCompatActivity {
         // set the orientation to portrait
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
 
-        // Set layout direction to RTL
-        getWindow().getDecorView().setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
-
-        // Make the Status Bar transparent
-        getWindow().setStatusBarColor(Color.TRANSPARENT);
-
-
         setContentView(R.layout.activity_logreg);
-
-
 
         mAuth = FirebaseAuth.getInstance();
         // logout the user if he is already logged in
@@ -70,6 +61,12 @@ public class MainLogRegActivity extends AppCompatActivity {
                     } else {
                         // Handle sign-in cancellation or failure
                         Toast.makeText(MainLogRegActivity.this, "Sign-In Cancelled or Failed", Toast.LENGTH_SHORT).show();
+                        // log the cancellation
+                        Log.d("Google Sign In", "Sign-In Cancelled or Failed");
+                        // log the result code
+                        Log.d("Google Sign In", "Result Code: " + result.getResultCode());
+                        // log the data
+                        Log.d("Google Sign In", "Data: " + (result.getData() != null ? result.getData().toString() : "null"));
                     }
                 }
         );
@@ -132,24 +129,17 @@ public class MainLogRegActivity extends AppCompatActivity {
                     if (task.isSuccessful()) {
                         // Sign in success
                         FirebaseUser user = mAuth.getCurrentUser();
-
-                        SharedPreferences preferences = getSharedPreferences("loginPrefs", MODE_PRIVATE);
-                        boolean isFirstTime = preferences.getBoolean("isFirstTime", true);
-
-                        if (isFirstTime) {
-                            // Redirect to the specific activity for first-time users
-                            Intent firstTimeLoginIntent = new Intent(this, FirstLogIn.class);
-                            startActivity(firstTimeLoginIntent);
-                        } else {
-                            // Redirect to main activity for returning users
+                        assert user != null;
+                        Log.d("Google Sign In", "signInWithCredential:success, user: " + user.getEmail());
+                        // Check if the user is verified
+                        if (user.isEmailVerified()) {
+                            // Redirect to the main activity
                             Intent mainActivityIntent = new Intent(MainLogRegActivity.this, MainActivity.class);
+                            mainActivityIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
                             startActivity(mainActivityIntent);
+                        } else {
+                            Toast.makeText(MainLogRegActivity.this, "Please verify your email before proceeding.", Toast.LENGTH_SHORT).show();
                         }
-
-                        // Update SharedPreferences
-                        SharedPreferences.Editor editor = preferences.edit();
-                        editor.putBoolean("isFirstTime", false);
-                        editor.apply();
 
                         finish();
                     } else {

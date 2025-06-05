@@ -1,6 +1,7 @@
 package com.example.redyapp;
 
 import android.Manifest;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.media.MediaRecorder;
 import android.net.Uri;
@@ -15,8 +16,14 @@ import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.app.AppCompatDelegate;
 import androidx.core.content.ContextCompat;
+
+import com.example.redyapp.LogReg.MainLogRegActivity;
 import com.example.redyapp.databinding.ActivityMainBinding;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -42,6 +49,7 @@ import retrofit2.Response;
  */
 public class MainActivity extends AppCompatActivity {
 
+    FirebaseUser user;
     private ActivityMainBinding binding;
     private MediaRecorder mediaRecorder;
     private File audioOutputFile;
@@ -89,6 +97,21 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        // Disable Dark Mode
+        AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO);
+
+        user = FirebaseAuth.getInstance().getCurrentUser();
+
+        // Check user authentication status
+        if (FirebaseAuth.getInstance().getCurrentUser() == null || !user.isEmailVerified()) {
+            // Redirect to another activity (e.g., LoginActivity) if the user is not authenticated
+            Intent intent = new Intent(this, MainLogRegActivity.class);
+            startActivity(intent);
+            finish();  // Close this activity so the user won't return to it when pressing back
+            return;  // Prevent the rest of the code from executing
+        }
+
         // Inflate the layout using View Binding and set the content view
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
@@ -133,6 +156,11 @@ public class MainActivity extends AppCompatActivity {
      * This is where you should clean up resources like MediaRecorder.
      */
     private void setInitialUIState() {
+        // Crucial: check if binding is not null before accessing its views
+        if (binding == null) {
+            Log.w(TAG, "Binding is null in setInitialUIState, skipping UI updates.");
+            return;
+        }
         // Reset UI elements to initial state
         binding.textView3.setText("Tap to Record, Long Press to Upload");
         binding.textView.setText("Settings");
@@ -154,6 +182,11 @@ public class MainActivity extends AppCompatActivity {
      * This method updates the text and hides unnecessary elements.
      */
     private void setRecordingUIState() {
+        // Add a null check before accessing binding views
+        if (binding == null) {
+            Log.w(TAG, "Binding is null in setRecordingUIState, cannot update UI.");
+            return;
+        }
         binding.textView3.setText("Recording...");
         // Hide other elements if needed
         if (binding.imageView4 != null) binding.imageView4.setVisibility(View.GONE);
@@ -169,6 +202,11 @@ public class MainActivity extends AppCompatActivity {
      * @param message The message to display while processing.
      */
     private void setProcessingUIState(String message) {
+        // Add a null check before accessing binding views
+        if (binding == null) {
+            Log.w(TAG, "Binding is null in setProcessingUIState, cannot update UI.");
+            return;
+        }
         binding.textView3.setText(message);
         if (binding.imageView4 != null) binding.imageView4.setVisibility(View.GONE);
         if (binding.textViewPredictionConfidence != null) binding.textViewPredictionConfidence.setVisibility(View.GONE);
@@ -185,6 +223,12 @@ public class MainActivity extends AppCompatActivity {
      * @param confidence The confidence level of the prediction.
      */
     private void displayResultsOnMainActivity(String label, Double confidence) {
+        // Add a null check before accessing binding views
+        if (binding == null) {
+            Log.w(TAG, "Binding is null in displayResultsOnMainActivity, cannot update UI.");
+            return;
+        }
+
         String displayLabel = "N/A";
         if (label != null && !"Error".equals(label) && !label.isEmpty()) {
             displayLabel = label.substring(0, 1).toUpperCase(Locale.ROOT) + label.substring(1).toLowerCase(Locale.ROOT) + "!";
@@ -315,12 +359,17 @@ public class MainActivity extends AppCompatActivity {
      * This method is called when the activity is destroyed or when an error occurs.
      */
     private void resetRecordingState() {
+        // Add a null check for binding here as well, since onDestroy calls this.
+        // It prevents NullPointerException if onDestroy is called when binding is already null.
         if (mediaRecorder != null) {
             try { mediaRecorder.release(); } catch (Exception e) { Log.e(TAG, "Error releasing media recorder: " + e.getMessage());}
             mediaRecorder = null;
         }
         isRecording = false;
-        setInitialUIState(); // Reset to initial UI
+        // Only attempt to update UI if binding is still valid
+        if (binding != null) {
+            setInitialUIState(); // This method will also need a null check for binding
+        }
         if (countDownTimer != null) countDownTimer.cancel();
     }
 
@@ -329,6 +378,10 @@ public class MainActivity extends AppCompatActivity {
      * This method is called when an error happens during recording or uploading.
      */
     private void resetToInitialStateAfterError() {
+        if (binding == null) {
+            Log.w(TAG, "Binding is null in resetToInitialStateAfterError, cannot update UI.");
+            return;
+        }
         setInitialUIState();
         binding.watermelonMic.setEnabled(true);
     }
@@ -336,11 +389,27 @@ public class MainActivity extends AppCompatActivity {
     /**
      * Called when the activity is about to be destroyed.
      * This method resets the recording state and releases resources.
+     * It ensures that the MediaRecorder is released and the binding reference is cleared to prevent memory leaks.
      */
     @Override
-    protected void onDestroy() { /* ... same as before ... */
+    protected void onDestroy() {
         super.onDestroy();
-        resetRecordingState();
+        // Null-check binding before calling methods that use it
+        // This is crucial because binding might already be null or its views invalid
+        // when onDestroy is called, especially if the activity was never fully created
+        // or if it's being destroyed by the system.
+        if (binding != null) {
+            resetRecordingState(); // This method now needs to safely handle a potentially null binding internally
+            binding = null; // Important: Clear the binding reference to prevent memory leaks
+        } else {
+            // If binding was already null, ensure MediaRecorder is released anyway
+            if (mediaRecorder != null) {
+                try { mediaRecorder.release(); } catch (Exception e) { Log.e(TAG, "Error releasing media recorder: " + e.getMessage());}
+                mediaRecorder = null;
+            }
+            if (countDownTimer != null) countDownTimer.cancel();
+            isRecording = false;
+        }
     }
 
     /**

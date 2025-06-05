@@ -27,6 +27,17 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity android:name=".LogReg.MainLogRegActivity" />
+        <activity android:name=".LogReg.LoginActivity" />
+        <activity android:name=".LogReg.RegisterActivity" />
+        <activity android:name=".LogReg.RegisterDone" />
+        <activity android:name=".LogReg.ForgotPassword" />
+
+        <meta-data
+            android:name="preloaded_fonts"
+            android:resource="@array/preloaded_fonts" />
+
+
     </application>
 
 </manifest>

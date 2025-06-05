@@ -1,12 +1,9 @@
 package com.example.redyapp.LogReg;
 
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
-import android.graphics.Color;
 import android.os.Bundle;
 import android.util.Patterns;
-import android.view.View;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.Button;
@@ -16,7 +13,7 @@ import android.widget.ImageButton;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.app.AppCompatDelegate;
 
-import com.creativesphere.sababa.R;
+import com.example.redyapp.R;
 import com.google.android.material.snackbar.Snackbar;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
@@ -36,16 +33,7 @@ public class RegisterActivity extends AppCompatActivity {
         // set the orientation to portrait
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
 
-        // Set layout direction to RTL
-        getWindow().getDecorView().setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
-
-        // Make the Status Bar transparent
-        getWindow().setStatusBarColor(Color.TRANSPARENT);
-
-
         setContentView(R.layout.activity_register);
-
-
 
         mAuth = FirebaseAuth.getInstance();
 
@@ -63,19 +51,19 @@ public class RegisterActivity extends AppCompatActivity {
             String email = emailField.getText().toString();
             String password = passwordField.getText().toString();
 
-
             register(email, password);
         });
     }
 
     private void register(String email, String password) {
         if (!isValidEmail(email)) {
-            showFeedback("כתובת האימייל אינה בפורמט הנכון.");
+            showFeedback("The email address is not valid.");
             return;
         }
 
         if (!isValidPassword(password)) {
-            showFeedback("הסיסמה צריכה להכיל לפחות 8 תווים ולכלול שילוב של אותיות ומספרים.");
+            showFeedback("The password must be at least 8 characters long and contain at least " +
+                    "one letter and one digit.");
             return;
         }
 
@@ -87,19 +75,14 @@ public class RegisterActivity extends AppCompatActivity {
                         user.sendEmailVerification()
                                 .addOnCompleteListener(verificationTask -> {
                                     if (verificationTask.isSuccessful()) {
-                                        SharedPreferences preferences = getSharedPreferences("loginPrefs", MODE_PRIVATE);
-                                        boolean isFirstTime = preferences.getBoolean("isFirstTime", true);
-                                        // set isFirstTime to true
-                                        SharedPreferences.Editor editor = preferences.edit();
-                                        editor.putBoolean("isFirstTime", true);
-                                        editor.apply();
-                                        // go to the next activity
-                                        Intent loginIntent = new Intent(RegisterActivity.this, RegisterDone.class);
-                                        loginIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                                        startActivity(loginIntent);
-
+                                        showFeedback("Registration successful! A verification email has been sent to " + email);
+                                        // Redirect to the registration done activity
+                                        Intent intent = new Intent(RegisterActivity.this, RegisterDone.class);
+                                        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                                        startActivity(intent);
+                                        finish();
                                     } else {
-                                        showFeedback("שליחת מייל נכשלה");
+                                        showFeedback("The verification email could not be sent. Please try again later.");
                                     }
                                 });
                         // log out the user
@@ -124,6 +107,7 @@ public class RegisterActivity extends AppCompatActivity {
     private boolean isValidPassword(String password) {
         if (password.length() < 8) return false;
 
+        // Check if the password contains at least one letter and one digit
         boolean hasLetter = password.matches(".*[a-zA-Z].*");
         boolean hasDigit = password.matches(".*\\d.*");
 

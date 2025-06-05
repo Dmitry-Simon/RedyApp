@@ -50,6 +50,7 @@ dependencies {
     implementation(libs.firebase.analytics)
     implementation(libs.firebase.auth) // For Java
     implementation(libs.play.services.auth)
+    
 
     // Networking (Retrofit)
     implementation(libs.retrofit)
@@ -58,4 +59,8 @@ dependencies {
 
     // Lottie for animations
     implementation(libs.lottie) // Or your preferred version
+
+    // For Credential Manager
+    implementation(libs.credentials) // Check for the latest version
+    implementation(libs.credentials.play.services.auth) // For Google integration
 }

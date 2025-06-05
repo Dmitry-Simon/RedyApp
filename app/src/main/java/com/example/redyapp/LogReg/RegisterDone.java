@@ -3,15 +3,13 @@ package com.example.redyapp.LogReg;
 import android.animation.Animator;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
-import android.graphics.Color;
 import android.os.Bundle;
-import android.view.View;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.app.AppCompatDelegate;
 
 import com.airbnb.lottie.LottieAnimationView;
-import com.creativesphere.sababa.R;
+import com.example.redyapp.R;
 
 public class RegisterDone extends AppCompatActivity {
 
@@ -26,13 +24,6 @@ public class RegisterDone extends AppCompatActivity {
 
         // set the orientation to portrait
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
-
-        // Set layout direction to RTL
-        getWindow().getDecorView().setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
-
-        // Make the Status Bar transparent
-        getWindow().setStatusBarColor(Color.TRANSPARENT);
-
 
         setContentView(R.layout.activity_register_done);
 

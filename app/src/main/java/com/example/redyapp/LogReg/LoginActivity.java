@@ -1,9 +1,7 @@
 package com.example.redyapp.LogReg;
 
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
-import android.graphics.Color;
 import android.os.Bundle;
 import android.util.Patterns;
 import android.view.View;
@@ -17,7 +15,8 @@ import android.widget.TextView;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.app.AppCompatDelegate;
 
-import com.creativesphere.sababa.R;
+import com.example.redyapp.MainActivity;
+import com.example.redyapp.R;
 import com.google.android.material.snackbar.Snackbar;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException;
@@ -27,7 +26,6 @@ import com.google.firebase.auth.FirebaseUser;
 public class LoginActivity extends AppCompatActivity {
 
     private FirebaseAuth mAuth;
-    private TextView forgotPassword;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -38,16 +36,7 @@ public class LoginActivity extends AppCompatActivity {
         // set the orientation to portrait
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
 
-        // Set layout direction to RTL
-        getWindow().getDecorView().setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
-
-        // Make the Status Bar transparent
-        getWindow().setStatusBarColor(Color.TRANSPARENT);
-
-
         setContentView(R.layout.activity_login);
-
-
 
         mAuth = FirebaseAuth.getInstance();
 
@@ -55,7 +44,7 @@ public class LoginActivity extends AppCompatActivity {
         EditText passwordField = findViewById(R.id.password_field);
         Button loginButton = findViewById(R.id.login_button);
         ImageButton backButton = findViewById(R.id.back_button);
-        forgotPassword = findViewById(R.id.forgot_password);
+        TextView forgotPassword = findViewById(R.id.forgot_password);
 
         forgotPassword.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -76,19 +65,16 @@ public class LoginActivity extends AppCompatActivity {
             signIn(email, password);
         });
 
-        TextView registerButton = (TextView)findViewById(R.id.register_text_clickable);
-        registerButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Intent registerIntent = new Intent(LoginActivity.this, RegisterActivity.class);
-                startActivity(registerIntent);
-            }
+        TextView registerButton = findViewById(R.id.register_text_clickable);
+        registerButton.setOnClickListener(view -> {
+            Intent registerIntent = new Intent(LoginActivity.this, RegisterActivity.class);
+            startActivity(registerIntent);
         });
     }
 
     private void signIn(String email, String password) {
         if (!isValidEmail(email)) {
-            showFeedback("המייל כתוב בצורה שגויה");
+            showFeedback("The email is invalid.");
             return;
         }
 
@@ -96,23 +82,20 @@ public class LoginActivity extends AppCompatActivity {
                 .addOnCompleteListener(this, task -> {
                     if (task.isSuccessful()) {
                         FirebaseUser user = mAuth.getCurrentUser();
+                        assert user != null;
                         if (user.isEmailVerified()) {
-                            SharedPreferences preferences = getSharedPreferences("loginPrefs", MODE_PRIVATE);
-                            boolean isFirstTime = preferences.getBoolean("isFirstTime", true);
-                            SharedPreferences.Editor editor = preferences.edit();
-                            editor.putBoolean("isFirstTime", true);
-                            editor.apply();
-                            // Redirect to the specific activity for first-time users
-                            Intent firstTimeLoginIntent = new Intent(LoginActivity.this, FirstLogIn.class);
-                            firstTimeLoginIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                            startActivity(firstTimeLoginIntent);
+                            // Redirect to the main activity
+                            Intent mainActivityIntent = new Intent(LoginActivity.this, MainActivity.class);
+                            mainActivityIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                            startActivity(mainActivityIntent);
+                            // Clear the back stack
                             finish();
 
                         } else {
-                            showFeedback("עוד לא אושר המייל, אנא אשרו");
+                            showFeedback("The email is not verified. Please check your inbox and verify your email.");
                         }
                     } else {
-                        // Check the type of exception and provide a corresponding Hebrew message
+                        // Check the type of exception and provide a corresponding error message
                         String errorMessage = getErrorMessage(task.getException());
                         showFeedback(errorMessage);
 
@@ -126,11 +109,13 @@ public class LoginActivity extends AppCompatActivity {
 
     private String getErrorMessage(Exception exception) {
         if (exception instanceof FirebaseAuthInvalidUserException) {
-            return "המשתמש או הסיסמה אינם נכונים";
+            return "The email address is not registered. Please sign up.";
         } else if (exception instanceof FirebaseAuthInvalidCredentialsException) {
-            return "הסיסמה שגויה";
+            return "The password is incorrect. Please try again.";
+        } else if (exception != null) {
+            return "Login failed: " + exception.getMessage();
         } else {
-            return "שגיאה בהתחברות, אנא נסה שוב";
+            return "An unknown error occurred. Please try again.";
         }
     }
 

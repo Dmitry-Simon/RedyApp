@@ -6,17 +6,18 @@
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:padding="16dp"
-    android:gravity="center">
+    android:gravity="center"
+    android:background="@drawable/background">
 
     <ImageButton
         android:id="@+id/back_button"
         android:layout_width="28dp"
         android:layout_height="25dp"
-        android:clickable="true"
-        android:layout_marginEnd="12dp"
         android:layout_marginTop="12dp"
+        android:layout_marginStart="12dp"
         android:background="@drawable/arrow"
-        app:layout_constraintEnd_toEndOf="parent"
+        android:clickable="true"
+        app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
 
@@ -26,6 +27,7 @@
         android:layout_height="110dp"
         android:layout_marginTop="100dp"
         android:background="@drawable/bobsababa"
+        android:backgroundTint="@color/red"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.516"
         app:layout_constraintStart_toStartOf="parent"
@@ -51,7 +53,7 @@
         android:layout_height="wrap_content"
         android:layout_marginStart="20dp"
         android:layout_marginTop="12dp"
-        android:fontFamily="@font/lunasima_bold"
+        android:fontFamily="@font/nunito"
         android:text="טיפ:"
         android:textColor="@color/white"
         android:textSize="18dp"
@@ -61,7 +63,7 @@
     <TextView
         android:layout_width="230dp"
         android:layout_height="wrap_content"
-        android:fontFamily="@font/lunasima_regular"
+        android:fontFamily="@font/nunito"
         android:maxEms="12"
         android:text="זה סבבה לראות ציונים נמוכים בקורסים שהם פחות סבבה"
         android:textColor="@color/white"
@@ -76,7 +78,7 @@
         android:layout_height="wrap_content"
         android:text="שכחתי סיסמה"
         android:layout_marginTop="12dp"
-        android:textColor="@color/yellow"
+        android:textColor="@color/white"
         android:textSize="36dp"
         android:textStyle="bold"
         app:layout_constraintEnd_toEndOf="parent"
@@ -123,13 +125,13 @@
         android:id="@+id/login_button"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginTop="40dp"
         android:background="@drawable/regular_btn"
-        android:fontFamily="@font/lunasima_bold"
+        android:fontFamily="@font/nunito"
         android:padding="10dp"
         android:text="התחברות"
         android:textColor="@color/white"
         android:textSize="18sp"
-        android:layout_marginTop="40dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/textInputEmail" />
