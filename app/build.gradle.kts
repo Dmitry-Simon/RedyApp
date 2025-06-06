@@ -34,13 +34,29 @@ android {
         viewBinding = true
     }
 }
-
 dependencies {
+    // This block contains your existing dependencies plus the fix for Room,
+    // now written in the correct Kotlin DSL (.kts) format.
 
+
+    // Room Database
+    val room_version = "2.6.1" // Use 'val' instead of 'def'
+    implementation(libs.room.runtime)
+    // For a pure Java project, use `annotationProcessor` instead of `kapt`.
+    // This is the correct configuration even in a .kts build file.
+    annotationProcessor(libs.room.compiler)
+
+    // Your existing dependencies
     implementation(libs.appcompat)
     implementation(libs.material)
     implementation(libs.activity)
     implementation(libs.constraintlayout)
+
+    // Note: These two lines are likely redundant now that the explicit Room
+    // dependencies are added above. You can try removing them if you wish.
+    implementation(libs.room.common.jvm)
+    implementation(libs.room.runtime.android)
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)
@@ -50,7 +66,6 @@ dependencies {
     implementation(libs.firebase.analytics)
     implementation(libs.firebase.auth) // For Java
     implementation(libs.play.services.auth)
-    
 
     // Networking (Retrofit)
     implementation(libs.retrofit)
