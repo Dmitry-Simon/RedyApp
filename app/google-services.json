@@ -14,6 +14,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "28434957029-sfdhpqgeh46bmle7fspfkp4fvusqdg2h.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.redyapp",
+            "certificate_hash": "44fcf2cddcfe6f72a93feb61bbcb76601760e0b2"
+          }
+        },
+        {
           "client_id": "28434957029-6rv09gb6sc0ino1aenlsda856hq4okfp.apps.googleusercontent.com",
           "client_type": 3
         }
