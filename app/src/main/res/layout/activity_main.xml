@@ -57,7 +57,7 @@
         android:id="@+id/history"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="28dp"
+        android:layout_marginBottom="34dp"
         android:clickable="true"
         android:contentDescription="History"
         app:layout_constraintBottom_toBottomOf="parent"

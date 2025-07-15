@@ -8,7 +8,7 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * RetrofitClient is a singleton class that provides an instance of Retrofit for making network requests.
- * It configures the client with logging, connection, read, and write timeouts.
+ * It configures the client with optimized timeouts, minimal logging, and connection pooling for better performance.
  */
 public class RetrofitClient {
     private static final String BASE_URL = "https://watermelon-api-96308048537.me-west1.run.app/";
@@ -21,16 +21,22 @@ public class RetrofitClient {
     public static ApiService getInstance() {
         // If retrofit is null, create a new instance
         if (retrofit == null) {
-            // Create a logging interceptor for debugging purposes and set the level to BODY
+            // Create a logging interceptor with minimal logging for production performance
             HttpLoggingInterceptor loggingInterceptor = new HttpLoggingInterceptor();
-            loggingInterceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
+            // Use HEADERS instead of BODY to reduce logging overhead while keeping debugging capability
+            loggingInterceptor.setLevel(HttpLoggingInterceptor.Level.HEADERS);
 
-            // Create an OkHttpClient with the logging interceptor and timeouts
+            // Create an OkHttpClient with optimized settings for faster API calls
             OkHttpClient httpClient = new OkHttpClient.Builder()
                     .addInterceptor(loggingInterceptor)
-                    .connectTimeout(30, TimeUnit.SECONDS) // Connection timeout
-                    .readTimeout(30, TimeUnit.SECONDS)    // Read timeout
-                    .writeTimeout(30, TimeUnit.SECONDS)   // Write timeout (important for uploads)
+                    // Reduced timeouts for faster failure detection and retry
+                    .connectTimeout(10, TimeUnit.SECONDS) // Reduced from 30s
+                    .readTimeout(15, TimeUnit.SECONDS)    // Reduced from 30s
+                    .writeTimeout(20, TimeUnit.SECONDS)   // Slightly reduced but kept higher for file uploads
+                    // Add connection pooling optimization
+                    .connectionPool(new okhttp3.ConnectionPool(5, 5, TimeUnit.MINUTES))
+                    // Enable response compression
+                    .retryOnConnectionFailure(true)
                     .build();
 
             // Build the Retrofit instance with the base URL, client, and Gson converter

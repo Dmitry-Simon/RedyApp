@@ -528,6 +528,7 @@ public class MainActivity extends AppCompatActivity {
 
     /**
      * Uploads an audio file to the prediction API and handles the response
+     * Optimized for faster processing with reduced file copying overhead
      *
      * @param file The audio file to upload
      * @param isUploadedFile Flag indicating if this is a user-uploaded file (true) or a recorded file (false)
@@ -540,19 +541,11 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
 
-        // Copy the file to persistent storage for history tracking
-        File persistentAudioFile = copyAudioToPersistentStorage(file);
-        if (persistentAudioFile == null) {
-            Toast.makeText(this, "Failed to save recording locally.", Toast.LENGTH_SHORT).show();
-            resetToInitialStateAfterError();
-            return;
-        }
+        // For performance, create the API request first, then handle file copying in background
+        RequestBody requestFile = RequestBody.create(file, MediaType.parse("audio/wav"));
+        MultipartBody.Part body = MultipartBody.Part.createFormData("file", file.getName(), requestFile);
 
-        // Create multipart request for the API
-        RequestBody requestFile = RequestBody.create(persistentAudioFile, MediaType.parse("audio/wav"));
-        MultipartBody.Part body = MultipartBody.Part.createFormData("file", persistentAudioFile.getName(), requestFile);
-
-        // Get API service and make the prediction request
+        // Get API service and make the prediction request immediately
         ApiService apiService = RetrofitClient.getInstance();
         Call<PredictionResponse> call = apiService.predictWatermelonSweetness(body);
 
@@ -564,13 +557,21 @@ public class MainActivity extends AppCompatActivity {
                     // Process successful response
                     PredictionResponse prediction = response.body();
                     displayResultsOnMainActivity(prediction.getPredictedLabel(), prediction.getConfidence());
-                    saveHistoryToDatabase(prediction.getPredictedLabel(), prediction.getConfidence(), persistentAudioFile.getAbsolutePath());
+
+                    // Copy file to persistent storage in background after successful prediction
+                    databaseExecutor.execute(() -> {
+                        File persistentAudioFile = copyAudioToPersistentStorage(file);
+                        if (persistentAudioFile != null) {
+                            saveHistoryToDatabase(prediction.getPredictedLabel(), prediction.getConfidence(), persistentAudioFile.getAbsolutePath());
+                        } else {
+                            Log.w(TAG, "Failed to save audio file to persistent storage for history");
+                        }
+                    });
                 } else {
                     // Handle API error
                     Log.e(TAG, "API Error or empty body. Code: " + response.code());
                     Toast.makeText(MainActivity.this, "Prediction failed. Code: " + response.code(), Toast.LENGTH_LONG).show();
                     setInitialUIState();
-                    persistentAudioFile.delete();
                 }
 
                 // Clean up temporary file if it was a user upload
@@ -585,7 +586,6 @@ public class MainActivity extends AppCompatActivity {
                 Log.e(TAG, "Network Failure: " + t.getMessage(), t);
                 Toast.makeText(MainActivity.this, "Network request failed.", Toast.LENGTH_LONG).show();
                 setInitialUIState();
-                persistentAudioFile.delete();
             }
         });
     }
