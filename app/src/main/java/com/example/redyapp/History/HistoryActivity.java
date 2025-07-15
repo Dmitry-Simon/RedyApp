@@ -1,4 +1,4 @@
-package com.example.redyapp;
+package com.example.redyapp.History;
 
 import android.os.Bundle;
 import android.util.Log;
@@ -6,6 +6,9 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+
+import com.example.redyapp.R;
+
 import java.io.File;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;

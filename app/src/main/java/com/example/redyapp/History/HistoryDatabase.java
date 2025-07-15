@@ -1,10 +1,12 @@
-package com.example.redyapp;
+package com.example.redyapp.History;
 
 import android.content.Context;
 import androidx.room.Database;
 import androidx.room.Room;
 import androidx.room.RoomDatabase;
 import androidx.room.TypeConverters;
+
+import com.example.redyapp.Converters;
 
 /**
  * The main database class for the application, built using Room.

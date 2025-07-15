@@ -1,4 +1,4 @@
-package com.example.redyapp;
+package com.example.redyapp.History;
 
 import androidx.lifecycle.LiveData;
 import androidx.room.Dao;

@@ -47,9 +47,15 @@ public class MainLogRegActivity extends AppCompatActivity {
         setContentView(R.layout.activity_logreg);
 
         mAuth = FirebaseAuth.getInstance();
-        // logout the user if he is already logged in
-        if (mAuth.getCurrentUser() != null) {
-            mAuth.signOut();
+        // Check if user is already signed in and redirect if necessary
+        FirebaseUser currentUser = mAuth.getCurrentUser();
+        if (currentUser != null && currentUser.isEmailVerified()) {
+            // User is already authenticated and verified, redirect to main activity
+            Intent mainActivityIntent = new Intent(MainLogRegActivity.this, MainActivity.class);
+            mainActivityIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            startActivity(mainActivityIntent);
+            finish();
+            return;
         }
 
         // Handling the result of the Google Sign-In Intent
@@ -84,35 +90,40 @@ public class MainLogRegActivity extends AppCompatActivity {
 
         // Login button
         Button loginButton = findViewById(R.id.login_button);
-        loginButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Intent loginIntent = new Intent(MainLogRegActivity.this, LoginActivity.class);
-                startActivity(loginIntent);
-            }
+        loginButton.setOnClickListener(view -> {
+            Intent loginIntent = new Intent(MainLogRegActivity.this, LoginActivity.class);
+            startActivity(loginIntent);
         });
 
         // Register button
         TextView registerButton = (TextView)findViewById(R.id.register_text_clickable);
-        registerButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Intent registerIntent = new Intent(MainLogRegActivity.this, RegisterActivity.class);
-                startActivity(registerIntent);
-            }
+        registerButton.setOnClickListener(view -> {
+            Intent registerIntent = new Intent(MainLogRegActivity.this, RegisterActivity.class);
+            startActivity(registerIntent);
         });
     }
 
     // Function to handle sign-in result
     private void handleSignInResult(Intent data) {
         try {
+            // The Task returned from this call is always completed, no need to attach a listener.
             GoogleSignInAccount account = GoogleSignIn.getSignedInAccountFromIntent(data).getResult(ApiException.class);
             if (account != null) {
+                Log.d("Google Sign In", "Account successfully retrieved. ID: " + account.getId());
                 firebaseAuthWithGoogle(account.getIdToken());
+            } else {
+                // This case is rare when getResult(ApiException.class) is used.
+                Log.w("Google Sign In", "GoogleSignIn.getSignedInAccountFromIntent returned a null account.");
             }
         } catch (ApiException e) {
-            Log.e("Google Sign In Error", "signInResult:failed code=" + e.getStatusCode() + ", message: " + e.getMessage());
-            Toast.makeText(MainLogRegActivity.this, "Google Sign-In Failed: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            // The ApiException status code indicates the detailed failure reason.
+            // Please refer to the GoogleSignInStatusCodes class reference for more information.
+            Log.e("Google Sign In Error", "signInResult:failed code=" + e.getStatusCode());
+            Log.e("Google Sign In Error", "Error message: " + e.getMessage());
+
+            // You can show a more specific error to the user
+            String errorMessage = "Google Sign-In Failed. Error code: " + e.getStatusCode();
+            Toast.makeText(MainLogRegActivity.this, errorMessage, Toast.LENGTH_LONG).show();
         }
     }
 
@@ -129,21 +140,20 @@ public class MainLogRegActivity extends AppCompatActivity {
                     if (task.isSuccessful()) {
                         // Sign in success
                         FirebaseUser user = mAuth.getCurrentUser();
-                        assert user != null;
-                        Log.d("Google Sign In", "signInWithCredential:success, user: " + user.getEmail());
-                        // Check if the user is verified
-                        if (user.isEmailVerified()) {
-                            // Redirect to the main activity
+                        if (user != null) {
+                            Log.d("Google Sign In", "signInWithCredential:success, user: " + user.getEmail());
+                            // Google accounts are typically already verified, so proceed to main activity
                             Intent mainActivityIntent = new Intent(MainLogRegActivity.this, MainActivity.class);
                             mainActivityIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
                             startActivity(mainActivityIntent);
+                            finish();
                         } else {
-                            Toast.makeText(MainLogRegActivity.this, "Please verify your email before proceeding.", Toast.LENGTH_SHORT).show();
+                            Log.e("Google Sign In", "Firebase user is null after successful authentication");
+                            Toast.makeText(MainLogRegActivity.this, "Authentication error occurred.", Toast.LENGTH_SHORT).show();
                         }
-
-                        finish();
                     } else {
                         // Sign in fails
+                        Log.e("Google Sign In", "signInWithCredential:failure", task.getException());
                         Toast.makeText(MainLogRegActivity.this, "Firebase Authentication Failed.", Toast.LENGTH_SHORT).show();
                     }
                 });
@@ -151,4 +161,3 @@ public class MainLogRegActivity extends AppCompatActivity {
 
 
 }
-

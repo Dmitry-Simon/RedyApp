@@ -5,7 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/backgroundmain"
-    tools:context=".HistoryActivity">
+    tools:context=".History.HistoryActivity">
 
     <ImageView
         android:id="@+id/back_button"

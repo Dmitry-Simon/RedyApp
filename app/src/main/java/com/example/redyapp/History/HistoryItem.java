@@ -1,4 +1,4 @@
-package com.example.redyapp;
+package com.example.redyapp.History;
 
 import androidx.room.Entity;
 import androidx.room.PrimaryKey;
