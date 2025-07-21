@@ -3,7 +3,8 @@
 Android app for classifying watermelon ripeness from tap audio using deep learning.  
 **This is the frontend part of "Project Phase B" of the final project.**
 
-
+[🔗 Link for download the APK](https://drive.google.com/file/d/18OC_MR-IxNMIf2QQ-rpTmzTqaw61SDS5/view?usp=sharing)
+---
 [🔗 Backend (FastAPI, ECAPA-TDNN) code](https://github.com/Dmitry-Simon/RedGreen)
 ---
 
