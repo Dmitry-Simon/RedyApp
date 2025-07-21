@@ -74,10 +74,14 @@ public class MainActivity extends AppCompatActivity {
     // Flags to track application state
     private boolean isRecording = false;
     private boolean isDisplayingResult = false;
+    private boolean isUploading = false;
+    private boolean recordingCanceled = false; // Flag to track if recording was manually canceled
     // Duration for audio recording in milliseconds (5 seconds)
     private static final long RECORDING_DURATION = 5000;
     // Timer to automatically stop recording after the defined duration
     private CountDownTimer countDownTimer;
+    // Current API call for upload cancellation
+    private Call<PredictionResponse> currentUploadCall;
     // Tag for logging
     private static final String TAG = "MainActivity";
 
@@ -157,7 +161,11 @@ public class MainActivity extends AppCompatActivity {
         binding.watermelonMic.setOnClickListener(view -> {
             if (isDisplayingResult) {
                 setInitialUIState();
-            } else if (!isRecording) {
+            } else if (isUploading) {
+                cancelUpload();
+            } else if (isRecording) {
+                cancelRecording();
+            } else {
                 checkPermissionAndStartRecording();
             }
         });
@@ -183,7 +191,7 @@ public class MainActivity extends AppCompatActivity {
 
         // Set up info button click listener
         binding.info.setOnClickListener(view -> {
-            Toast.makeText(MainActivity.this, "Info clicked (Implement AboutActivity)", Toast.LENGTH_SHORT).show();
+            Toast.makeText(MainActivity.this, "Not functional, sorry :(", Toast.LENGTH_SHORT).show();
         });
 
         // Set up click listener for the History button
@@ -209,35 +217,37 @@ public class MainActivity extends AppCompatActivity {
         }
         // Show initial instruction text
         binding.textViewInstruction.setVisibility(View.VISIBLE);
+        binding.textViewInstruction.setText("Tap to Record, Long Press to Upload");
 
         // Hide the result area
         binding.imageView4.setVisibility(View.GONE);
         binding.textViewPredictionResult.setVisibility(View.GONE);
         binding.textViewPredictionConfidence.setVisibility(View.GONE);
 
-        // Enable mic button and reset flag
+        // Enable mic button and reset flags
         binding.watermelonMic.setEnabled(true);
         isDisplayingResult = false;
+        isUploading = false;
     }
 
     /**
      * Updates the UI to reflect that recording is in progress
      *
      * This method:
-     * - Changes instruction text to "Recording..."
+     * - Changes instruction text with dynamic countdown
      * - Hides any prediction results
-     * - Disables the microphone button to prevent multiple recordings
+     * - Enables the microphone button so user can cancel recording
      */
     private void setRecordingUIState() {
         if (binding == null) {
             Log.w(TAG, "Binding is null in setRecordingUIState, cannot update UI.");
             return;
         }
-        binding.textViewInstruction.setText("Recording...");
+        binding.textViewInstruction.setText("Recording... (tap to cancel)");
         if (binding.imageView4 != null) binding.imageView4.setVisibility(View.GONE);
         if (binding.textViewPredictionConfidence != null) binding.textViewPredictionConfidence.setVisibility(View.GONE);
         if (binding.textViewPredictionResult  != null) binding.textViewPredictionResult.setVisibility(View.GONE);
-        binding.watermelonMic.setEnabled(false);
+        binding.watermelonMic.setEnabled(true); // Enable button so user can cancel recording
         isDisplayingResult = false;
     }
 
@@ -255,8 +265,9 @@ public class MainActivity extends AppCompatActivity {
         if (binding.imageView4 != null) binding.imageView4.setVisibility(View.GONE);
         if (binding.textViewPredictionConfidence != null) binding.textViewPredictionConfidence.setVisibility(View.GONE);
         if (binding.textViewPredictionResult  != null) binding.textViewPredictionResult.setVisibility(View.GONE);
-        binding.watermelonMic.setEnabled(false);
+        binding.watermelonMic.setEnabled(true); // Enable button so user can cancel
         isDisplayingResult = false;
+        isUploading = true; // Set uploading flag
     }
 
     /**
@@ -335,6 +346,7 @@ public class MainActivity extends AppCompatActivity {
      */
     private void startRecordingFlow() {
         if (isRecording) return;
+        recordingCanceled = false; // Reset the cancel flag when starting new recording
         setRecordingUIState();
 
         // Find an appropriate directory to store the temporary recording
@@ -367,12 +379,15 @@ public class MainActivity extends AppCompatActivity {
             mediaRecorder.prepare();
             mediaRecorder.start();
             isRecording = true;
-            Toast.makeText(this, "Recording started...", Toast.LENGTH_SHORT).show();
 
             // Set timer to automatically stop recording after defined duration
             countDownTimer = new CountDownTimer(RECORDING_DURATION, 1000) {
                 public void onTick(long millisUntilFinished) { /* ... */ }
-                public void onFinish() { if (isRecording) stopRecording(); }
+                public void onFinish() {
+                    if (isRecording && !recordingCanceled) { // Only process if not manually canceled
+                        stopRecording();
+                    }
+                }
             }.start();
         } catch (IOException | IllegalStateException e) {
             Log.e(TAG, "MediaRecorder start/prepare failed: " + e.getMessage());
@@ -547,12 +562,15 @@ public class MainActivity extends AppCompatActivity {
 
         // Get API service and make the prediction request immediately
         ApiService apiService = RetrofitClient.getInstance();
-        Call<PredictionResponse> call = apiService.predictWatermelonSweetness(body);
+        currentUploadCall = apiService.predictWatermelonSweetness(body);
 
         // Execute the request asynchronously
-        call.enqueue(new Callback<>() {
+        currentUploadCall.enqueue(new Callback<>() {
             @Override
             public void onResponse(@NonNull Call<PredictionResponse> call, @NonNull Response<PredictionResponse> response) {
+                isUploading = false; // Reset uploading flag
+                currentUploadCall = null; // Clear current call reference
+
                 if (response.isSuccessful() && response.body() != null) {
                     // Process successful response
                     PredictionResponse prediction = response.body();
@@ -582,6 +600,15 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public void onFailure(@NonNull Call<PredictionResponse> call, @NonNull Throwable t) {
+                isUploading = false; // Reset uploading flag
+                currentUploadCall = null; // Clear current call reference
+
+                // Check if the failure was due to cancellation
+                if (call.isCanceled()) {
+                    Log.d(TAG, "Upload was canceled");
+                    return; // Don't show error message for cancellation
+                }
+
                 // Handle network failure
                 Log.e(TAG, "Network Failure: " + t.getMessage(), t);
                 Toast.makeText(MainActivity.this, "Network request failed.", Toast.LENGTH_LONG).show();
@@ -631,5 +658,51 @@ public class MainActivity extends AppCompatActivity {
             historyDatabase.historyDao().insert(historyItem);
             Log.d(TAG, "History item saved to local Room database.");
         });
+    }
+
+    /**
+     * Cancels the current upload operation if one is in progress
+     * This is called when the user clicks the watermelon mic button during upload
+     */
+    private void cancelUpload() {
+        if (isUploading && currentUploadCall != null) {
+            currentUploadCall.cancel();
+            currentUploadCall = null;
+            isUploading = false;
+            Log.d(TAG, "Upload canceled by user");
+            setInitialUIState();
+        }
+    }
+
+    /**
+     * Cancels the current recording if one is in progress
+     * This is called when the user clicks the watermelon mic button during recording
+     */
+    private void cancelRecording() {
+        if (isRecording) {
+            recordingCanceled = true; // Set flag to prevent timer from processing
+
+            // Stop recording without processing the file
+            if (countDownTimer != null) countDownTimer.cancel();
+            try {
+                if (mediaRecorder != null) {
+                    mediaRecorder.stop();
+                    mediaRecorder.release();
+                }
+            } catch (RuntimeException e) {
+                Log.e(TAG, "MediaRecorder stop() failed during cancel: " + e.getMessage());
+            } finally {
+                mediaRecorder = null;
+                isRecording = false;
+            }
+
+            // Delete the incomplete recording file
+            if (audioOutputFile != null && audioOutputFile.exists()) {
+                audioOutputFile.delete();
+                audioOutputFile = null;
+            }
+            Log.d(TAG, "Recording canceled by user");
+            setInitialUIState(); // Go back to initial state without processing
+        }
     }
 }
