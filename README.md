@@ -1,4 +1,4 @@
-# 🍉 RedyApp: Watermelon Ripeness Classification Frontend
+# 🍉 Redy: Watermelon Sweetness Classification Frontend
 
 Android app for classifying watermelon ripeness from tap audio using deep learning.  
 **This is the frontend part of "Project Phase B" of the final project.**
